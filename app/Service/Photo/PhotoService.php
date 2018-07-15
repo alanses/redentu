@@ -11,10 +11,21 @@ use App\Entity\Image as ModelImage;
 Class PhotoService
 {
     static $directories;
+    static $textWaterMark;
+
+    protected $originImage;
+    protected $resultImage;
+    protected $watermarkImage;
+    protected $weight;
+    protected $height;
 
     public function __construct()
     {
         self::createDir(['origin', 'watermark', 'result']);
+        $this->originImage = '';
+        $this->resultImage = '';
+        $this->weight = '';
+        $this->height = '';
     }
 
     private function getFullPathToResultDirectory($image)
@@ -33,14 +44,15 @@ Class PhotoService
         if (!$size) {
             $size = self::getSizeImageForResize($request);
         }
-        if (!$image) {
-            $fileMainImage = $request->file('mainImage');
+        if ($image) {
+            $img = Image::make($image);
+            $pathToImage = $this->getFullPathToResultDirectory($this->originImage);
+        } else {
+            $fileMainImage = $this->originImage;
             $pathToImage = $this->getFullPathToResultDirectory($fileMainImage);
             $img = Image::make($fileMainImage);
-        } else {
-            $img = Image::make($image);
-            $pathToImage = $this->getFullPathToResultDirectory($request->file('mainImage'));
         }
+
         $img->heighten($size['height'], function ($constraint) {
             $constraint->upsize();
         })->save($pathToImage);
@@ -99,9 +111,9 @@ Class PhotoService
         $path = $this->getFullPathToOriginDirectory($mainImage);
         $image->save($path);
 
-        $img = imagecreatefromjpeg($path);
-        $x_step = intval($image->width() / $num_samples);
-        $y_step = intval($image->height() / $num_samples);
+        $img = \imagecreatefromjpeg($path);
+        $x_step = \intval($image->width() / $num_samples);
+        $y_step = \intval($image->height() / $num_samples);
 
         $total_lum = 0;
         $sample_no = 1;
@@ -109,7 +121,7 @@ Class PhotoService
         for ($x = 0; $x < $image->width(); $x += $x_step) {
             for ($y = 0; $y < $image->height(); $y += $y_step) {
 
-                $rgb = imagecolorat($img, $x, $y);
+                $rgb = \imagecolorat($img, $x, $y);
                 $r = (int)($rgb >> 16) & 0xFF;
                 $g = (int)($rgb >> 8) & 0xFF;
                 $b = (int)$rgb & 0xFF;
@@ -122,23 +134,26 @@ Class PhotoService
         }
         $avg_lum = $total_lum / $sample_no;
         if ($avg_lum > 170) {
-            return [0, 0, 0, 0];
+            return [0, 0, 0, 1];
         } else {
-            return [255, 255, 255, 255];
+            return [255,255,255, 0.9];
         }
     }
 
     public function validateRequest(Request $request)
     {
-            if ($request->file('mainImage') && $request->get('textForWaterMark')) {
-                return $this->getArrayResult($this->makePhotoWithWaterMarkText($request));
-            }
+        $this->setImages($request);
+        $this->setParamImages($request);
 
-            if ($request->file('mainImage') && $request->file('watermark')) {
-                return $this->getArrayResult($this->makePhotoWithWaterMarkImage($request));
-            }
+        if ($this->originImage && self::$textWaterMark) {
+            return $this->getArrayResult($this->makePhotoWithWaterMarkText($request));
+        }
 
-            return false;
+        if ($this->originImage && $this->watermarkImage) {
+            return $this->getArrayResult($this->makePhotoWithWaterMarkImage($request));
+        }
+
+        return false;
 
     }
 
@@ -154,7 +169,7 @@ Class PhotoService
     static function createDir(Array $directories)
     {
         try {
-            array_map(function ($dir) {
+            \array_map(function ($dir) {
                 if (!file_exists(public_path($dir))) {
                     mkdir(public_path($dir), 0777, true);
                 }
@@ -178,8 +193,8 @@ Class PhotoService
 
     protected function makePhotoWithWaterMarkText(Request $request)
     {
-        $imageWithWaterMarkText = $this->makeWaterMarkWithText($request->file('mainImage'), $request->get('textForWaterMark'));
-        if ($request->get('weight') && $request->get('height')) {
+        $imageWithWaterMarkText = $this->makeWaterMarkWithText($this->originImage, self::$textWaterMark);
+        if ($this->height && $this->weight) {
             $resizeImage = $this->Resize($request, $imageWithWaterMarkText);
             return $resizeImage;
         }
@@ -188,12 +203,12 @@ Class PhotoService
 
     protected function makePhotoWithWaterMarkImage(Request $request)
     {
-            $imageWithWaterMarkImage = $this->makeWaterMarkWithImage($request->file('mainImage'), $request->file('watermark'));
-            if ($request->get('weight') && $request->get('height')) {
-                $resizeImage = $this->Resize($request, $imageWithWaterMarkImage);
-                return $resizeImage;
-            }
-            return $imageWithWaterMarkImage;
+        $imageWithWaterMarkImage = $this->makeWaterMarkWithImage($this->originImage, $this->watermarkImage);
+        if ($this->height && $this->weight) {
+            $resizeImage = $this->Resize($request, $imageWithWaterMarkImage);
+            return $resizeImage;
+        }
+        return $imageWithWaterMarkImage;
     }
 
     protected function getArrayResult($result)
@@ -204,5 +219,19 @@ Class PhotoService
             'extension' => $result->extension,
             'filename' => $result->filename,
         ];
+    }
+
+    protected function setImages(Request $request)
+    {
+        $this->originImage = $request->file('mainImage');
+        $this->watermarkImage = $request->file('watermark');
+    }
+
+    protected function setParamImages(Request $request)
+    {
+        $this->height = $request->get('height');
+        $this->weight = $request->get('weight');
+
+        self::$textWaterMark = $request->get('textForWaterMark');
     }
 }
