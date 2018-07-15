@@ -19,7 +19,7 @@ class PhotoController extends Controller
                 throw new \Exception('Невірно обрані параметри');
 
             return response()->json([
-                'data' => $image
+                'imageInfo' => $image
             ],201);
 
         } catch (\Exception $exception) {

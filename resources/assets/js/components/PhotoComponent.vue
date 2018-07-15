@@ -1,5 +1,8 @@
 <template>
     <div>
+        <div v-if="this.status.changeSuccess" class="image">
+            <img :src="'result/' + responseImage">
+        </div>
         <form v-on:submit.prevent="sendImageToServer" enctype="multipart/form-data">
             <div class="form-group">
                 <label>Виберіть основне зображення</label>
@@ -50,6 +53,7 @@
                     class="btn btn-primary"
             >Відправити
             </button>
+            <img src=""/>
         </form>
     </div>
 </template>
@@ -83,7 +87,8 @@
                 changeImageParam: {
                     weight: '',
                     height: ''
-                }
+                },
+                responseImage: ''
             }
         },
         methods: {
@@ -97,7 +102,9 @@
             sendImageToServer() {
                 this.$http.post('/save-image-as-watermark', this.assembleInfoForServer()).then(res => {
                     if (res.status === 201) {
-                        this.changeSuccess = true
+                        this.responseImage = res.data.imageInfo.basename
+                        this.status.changeSuccess = true
+                        this.$forceUpdate();
                     }
                 })
             },
@@ -113,6 +120,10 @@
             getImageForWatermark(file) {
                 this.transferObject.append('watermark', file)
             },
+
+            getImageFromServer(data) {
+                console.log(data)
+            }
         }
     }
 </script>

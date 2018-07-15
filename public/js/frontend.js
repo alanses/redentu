@@ -49465,7 +49465,7 @@ exports = module.exports = __webpack_require__(38)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -49797,6 +49797,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
 
 
 
@@ -49826,7 +49830,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             changeImageParam: {
                 weight: '',
                 height: ''
-            }
+            },
+            responseImage: ''
         };
     },
 
@@ -49841,7 +49846,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
             this.$http.post('/save-image-as-watermark', this.assembleInfoForServer()).then(function (res) {
                 if (res.status === 201) {
-                    _this.changeSuccess = true;
+                    _this.responseImage = res.data.imageInfo.basename;
+                    _this.status.changeSuccess = true;
+                    _this.$forceUpdate();
                 }
             });
         },
@@ -49854,6 +49861,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         },
         getImageForWatermark: function getImageForWatermark(file) {
             this.transferObject.append('watermark', file);
+        },
+        getImageFromServer: function getImageFromServer(data) {
+            console.log(data);
         }
     }
 });
@@ -49920,6 +49930,12 @@ var render = function() {
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
   return _c("div", [
+    this.status.changeSuccess
+      ? _c("div", { staticClass: "image" }, [
+          _c("img", { attrs: { src: "result/" + _vm.responseImage } })
+        ])
+      : _vm._e(),
+    _vm._v(" "),
     _c(
       "form",
       {
@@ -50053,7 +50069,9 @@ var render = function() {
           "button",
           { staticClass: "btn btn-primary", attrs: { type: "submit" } },
           [_vm._v("Відправити\n        ")]
-        )
+        ),
+        _vm._v(" "),
+        _c("img", { attrs: { src: "" } })
       ]
     )
   ])
